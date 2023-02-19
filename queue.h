@@ -34,6 +34,16 @@
  */
 
 /*
+ * This file contains data structures from the BSD's <sys/queue.h>. It is
+ * hard to find which implemented each, but as far as I can tell much of
+ * the LIST_* and TAILQ_* macros were released with 4.4BSD. 4.4BSD also
+ * contained CIRCLEQ_* macros but they are not included because of void
+ * pointer magic messing things up sometimes. STAILQ_* macros seem to be
+ * implemented by FreeBSD. NetBSD/OpenBSD have SIMPLEQ_* which is nearly
+ * the same.
+ */
+
+/*
  * Keep this as _SYS_QUEUE_H_ so it doesn't conflict with any system headers.
  */
 #ifndef _SYS_QUEUE_H_
@@ -104,6 +114,13 @@
 	(listnode)->field.le_prev = &(node)->field.le_next; \
 } while (0)
 
+#define LIST_REMOVE(node, field) do { \
+	if ((node)->field.le_next != NULL) { \
+		(node)->field.le_next->field.le_prev = (node)->field.le_prev; \
+	} \
+	*(node)->field.le_prev = (node)->field.le_next; \
+} while (0)
+
 #define LIST_FOREACH(lvar, head, field) \
 	for ((lvar) = (head)->lh_first; \
 			(lvar) != NULL; \
@@ -125,6 +142,10 @@
 #define TAILQ_NEXT(node, field) ((node)->field.tqe_next)
 #define TAILQ_END(head) (NULL)
 #define TAILQ_EMPTY(head) ((head)->tqh_first == NULL)
+#define TAILQ_LAST(head, headtype) \
+	(*(((struct headtype *)((head)->tqh_last))->tqh_last))
+#define TAILQ_PREV(node, headtype, field) \
+	(*(((struct headtype *)((node)->field.tqe_prev))->tqh_last))
 
 #define TAILQ_HEAD_INITIALIZER(head) { NULL, &(head).tqh_first }
 
@@ -165,10 +186,24 @@
 	(listnode)->field.tqe_prev = &(node)->field.tqe_next; \
 } while (0)
 
+#define TAILQ_REMOVE(head, node, field) do { \
+	if ((node)->field.tqe_next != NULL) { \
+		(node)->field.tqe_next->field.tqe_prev = (node)->field.tqe_prev; \
+	} else { \
+		(head)->tqh_last = (node)->field.tqe_prev; \
+	} \
+	*(node)->field.tqe_prev = (node)->field.tqe_next; \
+} while (0)
+
 #define TAILQ_FOREACH(lvar, head, field) \
 	for ((lvar) = (head)->tqh_first; \
 			(lvar) != NULL; \
 			(lvar) = (lvar)->field.tqe_next)
+
+#define TAILQ_FOREACH_REVERSE(lvar, head, headtype, field) \
+	for ((lvar) = TAILQ_LAST((head), headtype); \
+			(lvar) != NULL; \
+			(lvar) = TAILQ_PREV((lvar), headtype, field))
 
 #define SLIST_HEAD(name, type) \
 	struct name { \
@@ -206,6 +241,18 @@
 
 #define SLIST_REMOVE_AFTER(listnode, field) do { \
 	(listnode)->field.sle_next = (listnode)->field.sle_next->field.sle_next; \
+} while (0)
+
+#define SLIST_REMOVE(head, node, type, field) do { \
+	if ((head)->slh_first == (node)) { \
+		SLIST_REMOVE_HEAD((head), field); \
+	} else { \
+		struct type *curr = (head)->slh_first; \
+		while (curr->field.sle_next != (node)) { \
+			curr = curr->field.sle_next; \
+		} \
+		SLIST_REMOVE_AFTER(curr, field); \
+	} \
 } while (0)
 
 #define SLIST_FOREACH(lvar, head, field) \
@@ -316,6 +363,18 @@
 #define STAILQ_REMOVE_AFTER(head, listnode, field) do { \
 	if (((listnode)->field.stqe_next = (listnode)->field.stqe_next->field.stqe_next) == NULL) \
 	(head)->stqh_last = &(listnode)->field.stqe_next; \
+} while (0)
+
+#define STAILQ_REMOVE(head, node, type, field) do { \
+	if ((head)->stqh_first == (node)) { \
+		STAILQ_REMOVE_HEAD((head), field); \
+	} else { \
+		struct type *curr = (head)->stqh_first; \
+		while (curr->field.stqe_next != (node)) { \
+			curr = curr->field.stqe_next; \
+		} \
+		STAILQ_REMOVE_AFTER((head), curr, field); \
+	} \
 } while (0)
 
 #define STAILQ_FOREACH(lvar, head, field) \

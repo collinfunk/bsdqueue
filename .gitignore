@@ -1,0 +1,8 @@
+*.o
+*.d
+*.a
+*.so
+*.gch
+*.elf
+*.bin
+*.out

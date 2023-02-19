@@ -43,6 +43,8 @@ void list_tests(void) {
 	LIST_INSERT_AFTER(&nodes[1], &n1, link);
 	LIST_INSERT_BEFORE(&nodes[2], &n2, link);
 	LIST_INSERT_AFTER(&nodes[3], &n3, link);
+	LIST_REMOVE(&n1, link);
+	LIST_REMOVE(&n2, link);
 
 	LIST_FOREACH(ptr, &head, link) {
 		printf("%d\n", ptr->val);
@@ -78,9 +80,19 @@ void tailq_tests(void) {
 	TAILQ_INSERT_BEFORE(&nodes[2], &n2, link);
 	TAILQ_INSERT_AFTER(&head, &nodes[3], &n3, link);
 
+	TAILQ_REMOVE(&head, &nodes[7], link);
+	TAILQ_REMOVE(&head, &nodes[6], link);
+	TAILQ_REMOVE(&head, &nodes[5], link);
+
 	TAILQ_FOREACH(ptr, &head, link) {
 		printf("%d\n", ptr->val);
 	}
+	TAILQ_FOREACH_REVERSE(ptr, &head, inthead, link) {
+		printf("%d\n", ptr->val);
+	}
+
+	printf("%d\n", TAILQ_LAST(&head, inthead)->val);
+	printf("%d\n", TAILQ_PREV(&n4, inthead, link)->val);
 }
 
 void slist_tests(void) {
@@ -114,10 +126,12 @@ void slist_tests(void) {
 	SLIST_REMOVE_HEAD(&head, link);
 	SLIST_REMOVE_HEAD(&head, link);
 	SLIST_REMOVE_AFTER(&nodes[1], link);
+	SLIST_REMOVE(&head, &nodes[3], intnode, link);
 
 	SLIST_FOREACH(ptr, &head, link) {
 		printf("%d\n", ptr->val);
 	}
+	
 }
 
 void simpleq_tests(void) {
@@ -194,6 +208,7 @@ void stailq_tests(void) {
 	STAILQ_REMOVE_HEAD(&head, link);
 	STAILQ_REMOVE_AFTER(&head, &nodes[1], link);
 	STAILQ_REMOVE_AFTER(&head, &nodes[2], link);
+	STAILQ_REMOVE(&head, &nodes[3], intnode, link);
 
 	STAILQ_FOREACH(ptr, &head, link) {
 		printf("%d\n", ptr->val);
